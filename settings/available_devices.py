@@ -196,3 +196,25 @@ AVAILABLE_DEVICES = {
         ]
     }
 }
+AVAILABLE_DEVICES_JLYUAN = {
+    'M960BDQN229CH': {
+        "MODEL": SupportedModel.RED_MI_NOTE_4X,
+        "SERVER_URL": 'http://127.0.0.1:4724/wd/hub',
+        "DEFAULT_CAPABILITY": {
+            "platformName": "Android",
+            "platformVersion": "6.0",
+            "deviceName": "VCO7IFTKKZZ5FI9T",
+            "udid": "VCO7IFTKKZZ5FI9T",
+            "automationName": "UiAutomator2",
+            "newCommandTimeout": 600,
+            "appPackage": "com.chinasofti.rcs",
+            "appActivity": "com.cmcc.cmrcs.android.ui.activities.WelcomeActivity",
+        },
+        'CARDS': [
+            {
+                'TYPE': CardType.CHINA_MOBILE,
+                'CARD_NUMBER': '14775290489'
+            },
+        ]
+    },
+}
