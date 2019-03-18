@@ -676,7 +676,8 @@ class HTMLTestRunner(Template_mixin):
         script = self.REPORT_TEST_OUTPUT_TMPL % dict(
             id=tid,
             # output=saxutils.escape(uo + ue),
-            output=saxutils.escape(uo),
+            # output=saxutils.escape(uo),
+            output=self._img_escape(uo)
         )
 
         row = tmpl % dict(
@@ -694,6 +695,13 @@ class HTMLTestRunner(Template_mixin):
 
     def _generate_ending(self):
         return self.ENDING_TMPL
+
+    def _img_escape(self, data):
+        """图片标签处理"""
+        import re
+        data = saxutils.escape(data)
+        data = re.sub(r"&lt;img(.*?)&gt;", "<img\\1>", data)
+        return data
 
 
 ##############################################################################

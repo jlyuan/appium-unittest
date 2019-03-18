@@ -211,3 +211,4 @@ class TestLogger(object):
         path = os.path.join(ConfigManager.get_screen_shot_path(), file_name)
         if capture_screen_shot(path):
             print(timestamp + ' - INFO - ' + "截图路径：" + path)
+            print('<img style="width:270px;height:480px;" src="' + path + '"  alt="用例执行失败时的截图" />')
