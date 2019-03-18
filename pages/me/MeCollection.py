@@ -1,3 +1,5 @@
+import time
+
 from appium.webdriver.common.mobileby import MobileBy
 import re
 from library.core.BasePage import BasePage
@@ -23,9 +25,9 @@ class MeCollectionPage(BasePage):
                   'www.baidu.com': (MobileBy.ID, 'com.chinasofti.rcs:id/favorite_tv'),
                   'com.chinasofti.rcs:id/favorite_content': (MobileBy.ID, 'com.chinasofti.rcs:id/favorite_content'),
                   'com.chinasofti.rcs:id/favorite_image_shortcut': (
-                  MobileBy.ID, 'com.chinasofti.rcs:id/favorite_image_shortcut'),
+                      MobileBy.ID, 'com.chinasofti.rcs:id/favorite_image_shortcut'),
                   'com.chinasofti.rcs:id/favorite_file_name_size': (
-                  MobileBy.ID, 'com.chinasofti.rcs:id/favorite_file_name_size'),
+                      MobileBy.ID, 'com.chinasofti.rcs:id/favorite_file_name_size'),
                   'ppt测试文件.ppt': (MobileBy.ID, 'com.chinasofti.rcs:id/file_name'),
                   '文件名': (MobileBy.ID, 'com.chinasofti.rcs:id/file_name'),
                   '100.5KB': (MobileBy.ID, 'com.chinasofti.rcs:id/file_size'),
@@ -37,8 +39,40 @@ class MeCollectionPage(BasePage):
                   '20.0KB': (MobileBy.ID, 'com.chinasofti.rcs:id/file_size'),
                   '[位置]广东省深圳市龙岗区居里夫人大道与环城路交叉口': (MobileBy.ID, 'com.chinasofti.rcs:id/favorite_tv_content'),
                   '录制.txt': (MobileBy.ID, 'com.chinasofti.rcs:id/file_name'),
-                  '271.0B': (MobileBy.ID, 'com.chinasofti.rcs:id/file_size')
+                  '271.0B': (MobileBy.ID, 'com.chinasofti.rcs:id/file_size'),
+                  '收藏的图片': (MobileBy.ID, 'com.chinasofti.rcs:id/favorite_image'),
+                  '收藏的视频': (MobileBy.ID, 'com.chinasofti.rcs:id/fl_favorite_video'),
+                  # 打开位置页面元素
+                  "导航按钮": (MobileBy.ID, 'com.chinasofti.rcs:id/location_nativ_btn'),
+                  '收藏消息体': (MobileBy.ID, 'com.chinasofti.rcs:id/favorite_layout'),
+                  "删除收藏": (MobileBy.ID, 'com.chinasofti.rcs:id/swipe_right'),
+                  '确定': (MobileBy.XPATH, "//*[contains(@text, '确定')]"),
+                  '收藏语音消息体': (MobileBy.ID, 'com.chinasofti.rcs:id/linearlayout_msg_content'),
+                  '视频时长': (MobileBy.ID, 'com.chinasofti.rcs:id/tv_favorite_video_length'),
                   }
+
+    @TestLogger.log()
+    def have_collection_pic(self):
+        """是否有收藏图片"""
+        els = self.get_elements(self.__class__.__locators['收藏的图片'])
+        if els:
+            return True
+        else:
+            return False
+
+    @TestLogger.log()
+    def have_collection_video(self):
+        """是否有收藏视频"""
+        els = self.get_elements(self.__class__.__locators['收藏的视频'])
+        if els:
+            return True
+        else:
+            return False
+
+    @TestLogger.log()
+    def click_nav_btn(self):
+        """点击位置页面右下角导航按钮"""
+        self.click_element(self.__class__.__locators['导航按钮'])
 
     def page_up(self):
         """向上滑动"""
@@ -56,7 +90,7 @@ class MeCollectionPage(BasePage):
             for el in els:
                 file_names.append(el.text)
         else:
-             return None
+            return None
         flag = True
         while flag:
             self.page_up()
@@ -152,7 +186,7 @@ class MeCollectionPage(BasePage):
     def click_back(self):
         """点击返回"""
         try:
-            self.click_element((MobileBy.XPATH, "//*[@content-desc='返回']"))
+            self.click_element((MobileBy.ID, "com.chinasofti.rcs:id/back"))
         except:
             self.click_element(self.__class__.__locators['返回'])
 
@@ -171,13 +205,21 @@ class MeCollectionPage(BasePage):
         return self
 
     @TestLogger.log()
+    def is_on_this_page(self):
+        """当前页面是否在收藏页面"""
+        el = self.get_elements(self.__class__.__locators["收藏"])
+        if len(el) > 0:
+            return True
+        return False
+
+    @TestLogger.log()
     def wait_for_open_file(self, timeout=8, auto_accept_alerts=True):
         """等待打开文件页面加载"""
         try:
             self.wait_until(
                 timeout=timeout,
                 auto_accept_permission_alert=auto_accept_alerts,
-                condition=lambda d: self._is_element_present((MobileBy.ID, 'com.chinasofti.rcs:id/toolbar'))
+                condition=lambda d: self._is_element_present((MobileBy.ID, 'com.chinasofti.rcs:id/menu'))
             )
         except:
             message = "页面在{}s内，没有加载成功".format(str(timeout))
@@ -197,3 +239,92 @@ class MeCollectionPage(BasePage):
             message = "页面在{}s内，没有加载成功".format(str(timeout))
             raise AssertionError(message)
         return self
+
+    @TestLogger.log()
+    def press_and_move_left(self):
+        """元素内向左滑动"""
+        self.swipe_by_direction(self.__class__.__locators["收藏消息体"], "left")
+
+    @TestLogger.log()
+    def is_delete_element_present(self):
+        """判断删除按钮是否存在"""
+        if not self._is_element_present(self.__class__.__locators["删除收藏"]):
+            raise AssertionError("删除收藏按钮不存在")
+        return True
+
+    @TestLogger.log()
+    def click_delete_collection(self):
+        """点击删除收藏"""
+        self.click_element(self.__class__.__locators["删除收藏"])
+
+    @TestLogger.log()
+    def click_sure_forward(self):
+        """点击确定"""
+        self.click_element(self.__class__.__locators["确定"])
+
+    @TestLogger.log()
+    def click_collection_voice_msg(self):
+        """点击收藏语音消息体"""
+        self.click_element(self.__class__.__locators["收藏语音消息体"])
+
+    @TestLogger.log()
+    def element_contain_text(self, locator, expected, message=''):
+        """检查某元素是否包含对应文本信息"""
+        return self.element_should_contain_text(self.__locators[locator], expected, message)
+
+    @TestLogger.log()
+    def get_video_len(self, locator, index=0):
+        """获取该元素文本信息"""
+        el = self.get_elements(self.__class__.__locators[locator])
+        el = el[index]
+        return el.text
+
+    @TestLogger.log()
+    def get_width_of_collection(self, locator, n):
+        """获取收藏的大小不超过多少行"""
+        el = self.get_element(self.__class__.__locators[locator])
+        rect = el.rect
+        height = rect["height"]
+        # heights = self.driver.get_window_size()["height"]
+        # height1 = float(height)/heights * 100
+        if height > 70 * n:
+            return False
+        return True
+
+    def get_all_collection(self):
+        """获取所有收藏的内容"""
+        els = self.get_elements(self.__class__.__locators["收藏消息体"])
+        file_names = []
+        if els:
+            for el in els:
+                file_names.append(el.text)
+        else:
+            return None
+        flag = True
+        while flag:
+            self.page_up()
+            els = self.get_elements(self.__class__.__locators["收藏消息体"])
+            for el in els:
+                if el.text not in file_names:
+                    file_names.append(el.text)
+                    flag = True
+                else:
+                    flag = False
+        return file_names
+
+    @TestLogger.log()
+    def click_collection_file_name(self, i=0):
+        """点击收藏文件"""
+        els = self.get_elements(self.__class__.__locators["文件名"])
+        els[i].click()
+        time.sleep(3)
+
+    @TestLogger.log()
+    def click_collection_pic_video(self, text):
+        """点击收藏图片或者视频"""
+        self.click_element(self.__class__.__locators[text])
+
+    @TestLogger.log()
+    def page_contain_element(self, locator):
+        """检查该页面是否包含某元素"""
+        return self.page_should_contain_element(self.__locators[locator])

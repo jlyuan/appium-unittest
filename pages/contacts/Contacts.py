@@ -53,10 +53,12 @@ class ContactsPage(FooterPage):
         '消息': (MobileBy.ID, 'com.chinasofti.rcs:id/tvMessage'),
         '通话': (MobileBy.ID, 'com.chinasofti.rcs:id/tvCall'),
         '工作台': (MobileBy.ID, 'com.chinasofti.rcs:id/tvCircle'),
-        '我': (MobileBy.ID, 'com.chinasofti.rcs:id/tvMe')
+        '我': (MobileBy.ID, 'com.chinasofti.rcs:id/tvMe'),
+        '弹出框点击允许': (MobileBy.ID, 'com.android.packageinstaller:id/permission_allow_button'),
+        '弹出框点击禁止': (MobileBy.ID, 'com.android.packageinstaller:id/permission_deny_button'),
     }
 
-    @TestLogger.log()
+    @TestLogger.log("获取所有联系人名")
     def get_contacts_name(self):
         """获取所有联系人名"""
         els = self.get_elements(self.__class__.__locators["联系人名"])
@@ -65,24 +67,31 @@ class ContactsPage(FooterPage):
             for el in els:
                 contacts_name.append(el.text)
         else:
-            raise AssertionError("No contacts, please add contacts in address book.")
+            raise AssertionError("No m005_contacts, please add m005_contacts in address book.")
         if "和通讯录" in contacts_name:
             contacts_name.remove("和通讯录")
         if "和飞信电话" in contacts_name:
             contacts_name.remove("和飞信电话")
         return contacts_name
 
-    @TestLogger.log()
+    @TestLogger.log("通过人名选择一个联系人")
     def select_people_by_name(self, name):
         """通过人名选择一个联系人"""
         self.click_element((MobileBy.XPATH, '//*[@text ="%s"]' % name))
 
     @TestLogger.log('点击+号')
     def click_add(self):
+        """点击+号"""
         self.click_element(self.__locators['+号'])
+
+    @TestLogger.log('点击消息')
+    def click_message_icon(self):
+        """点击消息按钮"""
+        self.click_element(self.__locators['消息'])
 
     @TestLogger.log('点击搜索框')
     def click_search_box(self):
+        """点击搜索框"""
         self.click_element(self.__locators['搜索'])
 
     @TestLogger.log('打开群聊列表')
@@ -113,7 +122,7 @@ class ContactsPage(FooterPage):
                 return True
         return False
 
-    @TestLogger.log()
+    @TestLogger.log("获取电话号码")
     def get_phone_number(self):
         """获取电话号码"""
         els = self.get_elements((MobileBy.ID, 'com.chinasofti.rcs:id/contact_phone'))
@@ -122,7 +131,7 @@ class ContactsPage(FooterPage):
             for el in els:
                 phones.append(el.text)
         else:
-            raise AssertionError("contacts is empty!")
+            raise AssertionError("m005_contacts is empty!")
         return phones
 
     def page_up(self):
@@ -131,7 +140,7 @@ class ContactsPage(FooterPage):
 
     def swipe_half_page_up(self):
         """向上滑动半页"""
-        self.swipe_by_percent_on_screen(50, 70, 50, 40, 900)
+        self.swipe_by_percent_on_screen(50, 72, 50, 36, 800)
 
     @TestLogger.log()
     def get_all_contacts_name(self):
@@ -142,7 +151,7 @@ class ContactsPage(FooterPage):
             for el in els:
                 contacts_name.append(el.text)
         else:
-            raise AssertionError("No contacts, please add contacts in address book.")
+            raise AssertionError("No m005_contacts, please add m005_contacts in address book.")
         flag = True
         while flag:
             self.swipe_half_page_up()
@@ -154,3 +163,64 @@ class ContactsPage(FooterPage):
                 else:
                     flag = False
         return contacts_name
+
+    @TestLogger.log()
+    def click_label_grouping(self):
+        """点击标签分组1"""
+        self.click_element(self.__class__.__locators['标签分组'])
+
+    @TestLogger.log()
+    def click_and_address(self):
+        """点击和通讯录"""
+        self.click_element(self.__class__.__locators['和通讯录'])
+
+
+    @TestLogger.log('点击公众号图标')
+    def click_official_account_icon(self):
+        self.click_element(self.__locators['公众号'])
+
+    @TestLogger.log('创建通讯录联系人')
+    def create_contacts_if_not_exits(self, name, number):
+        """
+        导入联系人数据
+        :param name:
+        :param number:
+        :return:
+        """
+        from pages import ContactDetailsPage
+        detail_page = ContactDetailsPage()
+
+        self.wait_for_page_load()
+        # 创建联系人
+        self.click_search_box()
+        from pages import ContactListSearchPage
+        contact_search = ContactListSearchPage()
+        contact_search.wait_for_page_load()
+        contact_search.input_search_keyword(name)
+        if contact_search.is_contact_in_list(name):
+            contact_search.click_back()
+        else:
+            contact_search.click_back()
+            self.click_add()
+            from pages import CreateContactPage
+            create_page = CreateContactPage()
+            create_page.wait_for_page_load()
+            create_page.hide_keyboard_if_display()
+            create_page.create_contact(name, number)
+            detail_page.wait_for_page_load()
+            detail_page.click_back_icon()
+
+    @TestLogger.log()
+    def click_and_address(self):
+        """点击和通讯录"""
+        self.click_element(self.__class__.__locators['和通讯录'])
+
+    @TestLogger.log()
+    def click_always_allowed(self):
+        """获取通讯录权限点击始终允许"""
+        self.click_element(self.__class__.__locators['弹出框点击允许'])
+
+    @TestLogger.log()
+    def click_forbidden(self):
+        """点击禁止"""
+        self.click_element(self.__class__.__locators['弹出框点击禁止'])

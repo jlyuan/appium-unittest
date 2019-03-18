@@ -49,79 +49,19 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-# URL: http://tungwaiyip.info/software/HTMLTestRunner.html
-from library.core.utils import common
-
 __author__ = "Wai Yip Tung,  Findyou"
 __version__ = "0.8.2.2"
-
-"""
-Change History
-Version 0.8.2.1 -Findyou
-* 改为支持python3
-Version 0.8.2.1 -Findyou
-* 支持中文，汉化
-* 调整样式，美化（需要连入网络，使用的百度的Bootstrap.js）
-* 增加 通过分类显示、测试人员、通过率的展示
-* 优化“详细”与“收起”状态的变换
-* 增加返回顶部的锚点
-Version 0.8.2
-* Show output inline instead of popup window (Viorel Lupu).
-Version in 0.8.1
-* Validated XHTML (Wolfgang Borgert).
-* Added description of test classes and test cases.
-Version in 0.8.0
-* Define Template_mixin class for customization.
-* Workaround a IE 6 bug that it does not treat <script> block as CDATA.
-Version in 0.7.1
-* Back port to Python 2.3 (Frank Horowitz).
-* Fix missing scroll bars in detail log (Podi).
-"""
 
 # TODO: color stderr
 # TODO: simplify javascript using ,ore than 1 class in the class attribute?
 
 import datetime
-import io
 import sys
 import unittest
 from xml.sax import saxutils
 
-
-# ------------------------------------------------------------------------
-# The redirectors below are used to capture output during testing. Output
-# sent to sys.stdout and sys.stderr are automatically captured. However
-# in some cases sys.stdout is already cached before HTMLTestRunner is
-# invoked (e.g. calling logging.basicConfig). In order to capture those
-# output, use the redirectors for the cached stream.
-#
-# e.g.
-#   >>> logging.basicConfig(stream=HTMLTestRunner.stdout_redirector)
-#   >>>
-
-class OutputRedirector(object):
-    """ Wrapper to redirect stdout or stderr """
-
-    def __init__(self, fp):
-        self.mirror_log_output = True
-        self.fp = fp
-
-    def write(self, s):
-        self.fp.write(s)
-        if self.mirror_log_output:
-            common.write_str_to_log_file(s)
-
-    def writelines(self, lines):
-        self.fp.writelines(lines)
-        if self.mirror_log_output:
-            common.write_lines_to_log_file(lines)
-
-    def flush(self):
-        self.fp.flush()
-
-
-stdout_redirector = OutputRedirector(sys.stdout)
-stderr_redirector = OutputRedirector(sys.stderr)
+_real_stdout = sys.stdout
+_real_stderr = sys.stderr
 
 
 # ----------------------------------------------------------------------
@@ -339,7 +279,7 @@ tr.errorClass > td  { background-color: #ea7e7b; }
     REPORT_TMPL = """
 <p id='show_detail_line'>
 <a class="btn btn-primary" href='javascript:showCase(0)'>概要{ %(passrate)s }</a>
-<a class="btn btn-danger" href='javascript:showCase(1)'>失败{ %(fail)s }</a>
+<a class="btn btn-danger" href='javascript:showCase(1)'>失败{ %(total_fail)s }</a>
 <a class="btn btn-success" href='javascript:showCase(2)'>通过{ %(Pass)s }</a>
 <a class="btn btn-info" href='javascript:showCase(3)'>所有{ %(count)s }</a>
 </p>
@@ -388,12 +328,12 @@ tr.errorClass > td  { background-color: #ea7e7b; }
 <tr id='%(tid)s' class='%(Class)s'>
     <td class='%(style)s'><div class='testcase'>%(desc)s</div></td>
     <td colspan='5' align='center'>
-    <!--默认收起错误信息 -Findyou
-    <button id='btn_%(tid)s' type="button"  class="btn btn-danger btn-xs collapsed" data-toggle="collapse" data-target='#div_%(tid)s'>%(status)s</button>
-    <div id='div_%(tid)s' class="collapse" align='left'>  -->
-    <!-- 默认展开错误信息 -Findyou -->
+    <!--默认收起错误信息 -Findyou   -->
+    <button id='btn_%(tid)s' type="button"  class="btn %(ButtonStyle)s btn-xs collapsed" data-toggle="collapse" data-target='#div_%(tid)s'>%(status)s</button>
+    <div id='div_%(tid)s' class="collapse" align='left'>
+    <!-- 默认展开错误信息 -Findyou 
     <button id='btn_%(tid)s' type="button"  class="btn %(ButtonStyle)s btn-xs" data-toggle="collapse" data-target='#div_%(tid)s'>%(status)s</button>
-    <div id='div_%(tid)s' class="collapse in" align='left'>
+    <div id='div_%(tid)s' class="collapse in" align='left'> -->
     <pre>
     %(script)s
     </pre>
@@ -427,8 +367,6 @@ tr.errorClass > td  { background-color: #ea7e7b; }
 
 # -------------------- The end of the Template class -------------------
 
-real_stdout = sys.stdout
-real_stderr = sys.stderr
 
 TestResult = unittest.TestResult
 
@@ -437,7 +375,7 @@ class _TestResult(TestResult):
     # note: _TestResult is a pure representation of results.
     # It lacks the output and reporting ability compares to unittest._TextTestResult.
 
-    def __init__(self, verbosity=1):
+    def __init__(self, verbosity=1, buffer=True):
         super(_TestResult, self).__init__()
         self.stdout0 = None
         self.stderr0 = None
@@ -456,86 +394,94 @@ class _TestResult(TestResult):
         self.result = []
         # 增加一个测试通过率 --Findyou
         self.passrate = float(0)
+        self.buffer = buffer
+        from io import StringIO
+        self.log_output = StringIO()
+
+    def _setupStdout(self):
+        if getattr(self, 'buffer', None):
+            from library.core.utils.common import FlushingStringIO
+            self._stderr_buffer = FlushingStringIO(self._dump_test_stderr)
+            self._stdout_buffer = FlushingStringIO(self._dump_test_stdout)
+            sys.stdout = self._stdout_buffer
+            sys.stderr = self._stderr_buffer
+
+    def _restoreStdout(self):
+        super(_TestResult, self)._restoreStdout()
+        self.log_output.seek(0)
+        self.log_output.truncate()
 
     def startTest(self, test):
         super(_TestResult, self).startTest(test)
-        # just one buffer for both stdout and stderr
-        self.outputBuffer = io.StringIO()
-        stdout_redirector.fp = self.outputBuffer
-        stderr_redirector.fp = self.outputBuffer
-        self.stdout0 = sys.stdout
-        self.stderr0 = sys.stderr
-        sys.stdout = stdout_redirector
-        sys.stderr = stderr_redirector
         from library.core.TestLogger import TestLogger
         TestLogger.start_test(test)
 
-    def complete_output(self):
-        """
-        Disconnect output redirection and return buffer.
-        Safe to call multiple times.
-        """
-        if self.stdout0:
-            sys.stdout = self.stdout0
-            sys.stderr = self.stderr0
-            self.stdout0 = None
-            self.stderr0 = None
-        return self.outputBuffer.getvalue() if hasattr(self, 'outputBuffer') else ''
-
     def stopTest(self, test):
-        # Usually one of addSuccess, addError or addFailure would have been called.
-        # But there are some path in unittest that would bypass this.
-        # We must disconnect stdout in stopTest(), which is guaranteed to be called.
-        self.complete_output()
+        from library.core.TestLogger import TestLogger
+        TestLogger.stop_test(test)
+        super(_TestResult, self).stopTest(test=test)
 
     def addSuccess(self, test):
+        super(_TestResult, self).addSuccess(test)
         from library.core.TestLogger import TestLogger
+        from library.core.utils import common
         TestLogger.test_success(test)
         self.success_count += 1
-        super(_TestResult, self).addSuccess(test)
-        output = self.complete_output()
+        output = self.log_output.getvalue()
         self.result.append((0, test, output, ''))
         if self.verbosity > 1:
-            real_stdout.write('ok ')
-            real_stdout.write(str(test))
-            real_stdout.write('\n')
+            _real_stdout.write('PASS  {}\n'.format(common.get_test_id(test)))
+            _real_stdout.flush()
         else:
-            real_stdout.write('.')
-            real_stdout.flush()
+            _real_stdout.write('PASS\n')
+            _real_stdout.flush()
 
     def addError(self, test, err):
         from library.core.TestLogger import TestLogger
-        TestLogger.test_error(test)
+        from library.core.utils import common
+        TestLogger.test_error(test, err)
         self.error_count += 1
         super(_TestResult, self).addError(test, err)
         _, _exc_str = self.errors[-1]
-        output = self.complete_output()
+        output = self.log_output.getvalue()
         self.result.append((2, test, output, _exc_str))
         if self.verbosity > 1:
-            real_stdout.write('E  ')
-            real_stdout.write(str(test))
-            real_stdout.write('\n')
-            real_stdout.flush()
+            _real_stdout.write('ERROR {}\n'.format(common.get_test_id(test)))
+            _real_stdout.flush()
         else:
-            real_stdout.write('E')
-            real_stdout.flush()
+            _real_stdout.write('ERROR')
+            _real_stdout.flush()
 
     def addFailure(self, test, err):
         from library.core.TestLogger import TestLogger
-        TestLogger.test_fail(test)
+        from library.core.utils import common
+        TestLogger.test_fail(test, err)
         self.failure_count += 1
         super(_TestResult, self).addFailure(test, err)
         _, _exc_str = self.failures[-1]
-        output = self.complete_output()
+        output = self.log_output.getvalue()
         self.result.append((1, test, output, _exc_str))
         if self.verbosity > 1:
-            real_stdout.write('F  ')
-            real_stdout.write(str(test))
-            real_stdout.write('\n')
-            real_stdout.flush()
+            _real_stdout.write('FAIL  {}\n'.format(common.get_test_id(test)))
+            _real_stdout.flush()
         else:
-            real_stdout.write('F')
-            real_stdout.flush()
+            _real_stdout.write('FAIL')
+            _real_stdout.flush()
+
+    def addSkip(self, test, reason):
+        from library.core.TestLogger import TestLogger
+        TestLogger.test_skip(test, reason)
+        super(_TestResult, self).addSkip(test, reason)
+
+    def _dump_test_stderr(self, data):
+        self.log_output.write(data)
+        from library.core.utils import common
+        common.write_lines_to_log_file(data)
+
+    def _dump_test_stdout(self, data):
+        self.log_output.write(data)
+        from library.core.utils import common
+        common.write_lines_to_log_file(data)
 
 
 class HTMLTestRunner(Template_mixin):
@@ -627,7 +573,7 @@ class HTMLTestRunner(Template_mixin):
             report=report,
             ending=ending,
             ReportBackgroundStyle="TestSuitePass" if not (
-                    result.failure_count or result.error_count) else "TestSuiteFail"
+                result.failure_count or result.error_count) else "TestSuiteFail"
         )
         self.stream.write(output.encode('utf8'))
 
@@ -693,6 +639,7 @@ class HTMLTestRunner(Template_mixin):
             count=str(result.success_count + result.failure_count + result.error_count),
             Pass=str(result.success_count),
             fail=str(result.failure_count),
+            total_fail=str(result.failure_count + result.error_count),
             error=str(result.error_count),
             passrate=self.passrate,
             HeaderStyle='AllPass' if not (result.error_count or result.failure_count) else 'NotAllPass'
@@ -728,7 +675,8 @@ class HTMLTestRunner(Template_mixin):
 
         script = self.REPORT_TEST_OUTPUT_TMPL % dict(
             id=tid,
-            output=saxutils.escape(uo + ue),
+            # output=saxutils.escape(uo + ue),
+            output=saxutils.escape(uo),
         )
 
         row = tmpl % dict(

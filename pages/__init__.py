@@ -64,14 +64,33 @@ __all__ = [
     'MessageSearchPage',
     'SearchPage',
     'GroupChatSetFindChatContentPage',
+    'LabelGroupingPage',
+    'LableGroupDetailPage',
+    'LabelGroupingChatPage',
+    'SelectHeContactsPage',
+    'SelectHeContactsDetailPage',
+    'ChatFilePage',
+    'FindChatRecordPage',
+    'SingleChatSetPage',
+    'PicVideoPage',
+    'WorkbenchPage',
+    'CreateTeamPage',
 ]
 
+from .ChatFile import ChatFilePage
+from .SingleChatSet import SingleChatSetPage
+from .FindChatRecord import FindChatRecordPage
 from .CreateGroupName import CreateGroupNamePage
 from .GroupChat import GroupChatPage
-from .SingleChat import SingleChatPage
+from .LabelGrouping import LabelGroupingPage
+from .LabelGroupingChat import LabelGroupingChatPage
+from .LableGroupDetail import LableGroupDetailPage
 from .SelectContacts import SelectContactsPage
 from .SelectLocalContacts import SelectLocalContactsPage
 from .SelectOneGroup import SelectOneGroupPage
+from .SelectHeContacts import SelectHeContactsPage
+from .SelectHeContactsDetail import SelectHeContactsDetailPage
+from .SingleChat import SingleChatPage
 from .chat import ChatAudioPage
 from .chat import ChatGIFPage
 from .chat import ChatLocationPage
@@ -83,27 +102,28 @@ from .chat import ChatPicPreviewPage
 from .chat import ChatProfilePage
 from .chat import ChatSelectFilePage
 from .chat import ChatSelectLocalFilePage
+from .chat import PicVideoPage
 from .contacts import ContactDetailsPage
 from .contacts import ContactListSearchPage
 from .contacts import ContactsPage
 from .contacts import CreateContactPage
 from .contacts import GroupListPage
 from .contacts import GroupListSearchPage
+from .groupset import GroupChatSetFindChatContentPage
 from .groupset import GroupChatSetManagerPage
 from .groupset import GroupChatSetModifyMyCardPage
 from .groupset import GroupChatSetPage
 from .groupset import GroupChatSetSeeMembersPage
 from .groupset import GroupChatSetSeeQRCodePage
 from .groupset import GroupNamePage
-from .groupset import GroupChatSetFindChatContentPage
 from .guide import GuidePage
 from .guide import PermissionListPage
 from .login import AgreementDetailPage
 from .login import AgreementPage
 from .login import OneKeyLoginPage
 from .login import SmsLoginPage
-from .me import MePage
 from .me import MeCollectionPage
+from .me import MePage
 from .me import MeSetCallPage
 from .me import MeSetContactsManagerPage
 from .me import MeSetDialPage
@@ -131,3 +151,5 @@ from .search import GlobalSearchGroupPage
 from .search import GlobalSearchMessagePage
 from .search import MessageSearchPage
 from .search import SearchPage
+from .workbench import WorkbenchPage
+from .workbench.create_team import CreateTeamPage
